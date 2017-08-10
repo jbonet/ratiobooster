@@ -1,10 +1,12 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
 
+from libs import printer
 from lxml import etree
-from requests_toolbelt.multipart.encoder import MultipartEncoder
 from StringIO import StringIO
+
 import datetime
+import importlib
 import locale
 import os
 import re
@@ -14,89 +16,48 @@ import yaml
 
 cfg = None
 already_downloaded = None
-hdsBaseUrl = 'https://www.hd-spain.com/'
-hdsHeaders = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml',
-        'Host': 'www.hd-spain.com',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Accept-Language': 'es-ES,es;q=0.8',
-        'Referer': 'https://www.hd-spain.com/index.php?sec=listado',
-    }
 
 output_folder = "./downloads"
+logger = None
+now = datetime.datetime.fromtimestamp(time.time())
 
-def getHdsHeaders():
-    headers = hdsHeaders
-    headers["Cookie"] = cfg["hdSpain"]["cookie"]
-    return headers
+# El parser devolvera una lista [{"title": titulo, "link": link, "freelech": True}] por cada torrent parseado. El modulo original seguira siendo el que llame a la descarga.
+def check_download(parser, torrent):
+    download = True
 
-
-def main():
-    now = datetime.datetime.fromtimestamp(time.time())
-    locale.setlocale(locale.LC_ALL, 'es_ES.utf8')
-    url = hdsBaseUrl + 'index.php?sec=listado'
-    r = requests.get(url, headers=getHdsHeaders())
-    tree = etree.parse(StringIO(r.content), etree.HTMLParser())
-
-    to_download = []
-
-    if cfg["freeleech_only"]:
-        print "Freelech Only mode is: ON"
-
-    for index, row in enumerate(tree.xpath('// table[@id="listado"]/tr')):
-        # Ignore first row (Headers)
-        if index == 0: continue
-        titulos = row.xpath('./td[@class="titulo"]/a[last()]/text()')
-        seeders = row.xpath('./td[@class="usuarios seeds "]/a[last()]/text()')
-        leechers = row.xpath('./td[@class="usuarios leechers  "]/a[last()]/text()')
-        completados = row.xpath('./td[@class="usuarios completados"]/text()')
-        uploadedAt = row.xpath('./td[@class="fecha"]/@title')
-        download = row.xpath('./td[@class="descargar"]/a')
-        link = download[0].xpath('./@href')[0]
-        multiplicadores = download[0].xpath('./b/text()')
-        freeleech = False
-        download = True
-        seeders = int(seeders[0])
-        completados = int(completados[0])
-        leechers = int(leechers[0])
-        if "AudioEditado" in titulos[0] or "R" == titulos[0]:
-            titulos = row.xpath('./td[@class="titulo"]/a[last() - 1]/text()')
-        titulo = titulos[0].lstrip()
-
-        if len(multiplicadores) >= 3 and float(multiplicadores[-1]) == 0.0:
-                freeleech = True
-        
-        date = datetime.datetime.strptime(uploadedAt[0].encode('utf-8'), '%A %d %B %Y, %H:%M')
-        
-        if cfg["freeleech_only"]:
-                if not freeleech:
-                    download = False
-
-        if already_downloaded.find(titulo) != -1:
-            # print "Ya se ha descargado: ", titulo, "  <---No se hace nada"
+    if parser.config["freeleech_only"]:
+        if not torrent.freeleech:
             download = False
 
-        if (now - date).days > cfg["maxdays"] and cfg["maxdays"] != -1:
-            download = False
-        
-        if download: 
-            if (seeders <= cfg["maxseeds"] or cfg["maxseeds"] == 0) and (completados <= cfg["maxcompleted"] or cfg["maxcompleted"] == -1) and leechers >= cfg["minleechers"]: 
-                torrent = requests.get(hdsBaseUrl + link, headers=getHdsHeaders(), stream=True)
-                if torrent.status_code == 200:
-                    fname = re.findall("filename=(.+)", torrent.headers['content-disposition'])
-                    filename = fname[0].strip('"')
-                    to_download.append(filename)
-                    writeFile(torrent.content, filename, titulo)
-            else:
-                pass
-                # print "Este torrent no cumple con los requisitos de descarga."
+    if already_downloaded.find(torrent.title) != -1:
+        # print "Ya se ha descargado: ", titulo, "  <---No se hace nada"
+        download = False
+
+    if (now - torrent.date).days > parser.config["maxdays"] and parser.config["maxdays"] != -1:
+        download = False
+
+    if download:
+        if (torrent.seeders <= parser.config["maxseeds"] or parser.config["maxseeds"] == 0) and (
+                torrent.completed <= parser.config["maxcompleted"] or parser.config["maxcompleted"] == -1) and torrent.leechers >= parser.config["minleechers"]:
+            r = parser.download_torrent(torrent)
+            if r.status_code == 200:
+                fname = re.findall(
+                    "filename=(.+)",
+                    r.headers['content-disposition'])
+                filename = fname[0].strip('"')
+                writeFile(r.content, filename, torrent.title)
+                return True
         else:
-            # Torrent is NOT Freeleech and Freeleech Only is ON, so we do not download.
             pass
-        
-    if not to_download:
-        print "Ningún torrent cumple los requisitos."
+            # print "Este torrent no cumple con los requisitos de
+            # descarga."
+    else:
+        # Torrent is NOT Freeleech and Freeleech Only is ON, so we do not
+        # download.
+        pass
+
+    return False
+
 
 def writeFile(data, filename, torrent_title):
     if not os.path.exists(output_folder):
@@ -105,18 +66,47 @@ def writeFile(data, filename, torrent_title):
     with open("%s/%s" % (output_folder, filename), 'wb') as f:
         f.write(data)
     with open("./.already_downloaded", 'ab') as f:
-        f.write(title+'\n')
+        f.write(torrent_title + '\n')
+
 
 def readAlreadyDownloaded():
     import mmap
-    with open(".already_downloaded", 'r') as f:
+    with open('.already_downloaded', 'r') as f:
         return mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
 
+def load_parsers():
+    parsers = []
+    for trackerDict in cfg["trackers"]:
+        for tracker, tracker_config in trackerDict.iteritems():
+            logger.d(tracker)
+            mod = importlib.import_module('modules.%s' % (tracker))
+
+            for param in ["minleechers", "maxseeds", "maxcompleted", "freeleech_only", "maxdays"]:
+                if param not in tracker_config:
+                    tracker_config[param] = cfg[param]
+            
+            parsers.append(mod.Parser(tracker_config, logger))
+    return parsers
+           
+def start(parsers):
+    to_download = False
+    if cfg["freeleech_only"]:
+        logger.d("Freelech Only mode is: ON")
+
+    for parser in parsers:
+        for torrent in parser.parse():
+            if check_download(parser, torrent):
+                to_download = True
+
+    if not to_download:
+        logger.i("Ningún torrent cumple el filtro")
+
 if __name__ == '__main__':
-    with open("config.yml", 'r') as ymlfile:
+    with open('config.yml', 'r') as ymlfile:
         cfg = yaml.load(ymlfile)
         output_folder = cfg["downloads_folder"]
 
+    logger = printer.Printer(True)
     already_downloaded = readAlreadyDownloaded()
-    main()
+    start(load_parsers())
