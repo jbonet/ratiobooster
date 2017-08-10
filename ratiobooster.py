@@ -17,7 +17,7 @@ import time
 import yaml
 
 NUM_JOBS = 8
-VERBOSITY_LEVEL = 1
+VERBOSITY_LEVEL = 0
 
 cfg = None
 already_downloaded = None
@@ -71,6 +71,9 @@ def writeFile(data, filename, torrent_title):
 
 def readAlreadyDownloaded():
     import mmap
+    if not os.path.exists('.already_downloaded'):
+        with open('.already_downloaded', 'w') as f:
+            f.write('Already downloaded torrents:')
     with open('.already_downloaded', 'r') as f:
         return mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
