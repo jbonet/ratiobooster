@@ -1,0 +1,11 @@
+hdSpain:
+  cookie: "Your cookie"
+downloads_folder: "~/Downloads"
+# yes | no
+freeleech_only: yes
+
+# -1 is unlimited
+maxcompleted: 0
+maxseeds: 1
+maxdays: 1
+minleechers: 0
