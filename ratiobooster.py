@@ -106,9 +106,7 @@ def start(parsers):
     results = Parallel(n_jobs=NUM_JOBS, verbose=VERBOSITY_LEVEL, backend="threading")(delayed(par1)(parser)
         for parser in parsers)
 
-    print results
-
-    if not to_download:
+    if not True in results:
         logger.i("Ningún torrent cumple el filtro")
 
 if __name__ == '__main__':
