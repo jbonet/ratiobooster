@@ -1,6 +1,7 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
 
+from joblib import Parallel, delayed
 from libs import printer
 from lxml import etree
 from StringIO import StringIO
@@ -11,8 +12,12 @@ import locale
 import os
 import re
 import requests
+import threading
 import time
 import yaml
+
+NUM_JOBS = 8
+VERBOSITY_LEVEL = 1
 
 cfg = None
 already_downloaded = None
@@ -30,7 +35,7 @@ def check_download(parser, torrent):
             download = False
 
     if already_downloaded.find(torrent.title) != -1:
-        # print "Ya se ha descargado: ", titulo, "  <---No se hace nada"
+        logger.d("Already downloaded torrent!")
         download = False
 
     if (now - torrent.date).days > parser.config["maxdays"] and parser.config["maxdays"] != -1:
@@ -39,7 +44,7 @@ def check_download(parser, torrent):
     if download:
         if (torrent.seeders <= parser.config["maxseeds"] or parser.config["maxseeds"] == 0) and (
                 torrent.completed <= parser.config["maxcompleted"] or parser.config["maxcompleted"] == -1) and torrent.leechers >= parser.config["minleechers"]:
-            r = parser.download_torrent(torrent)
+            r = download_torrent(parser, torrent)
             if r.status_code == 200:
                 fname = re.findall(
                     "filename=(.+)",
@@ -47,17 +52,13 @@ def check_download(parser, torrent):
                 filename = fname[0].strip('"')
                 writeFile(r.content, filename, torrent.title)
                 return True
-        else:
-            pass
-            # print "Este torrent no cumple con los requisitos de
-            # descarga."
-    else:
-        # Torrent is NOT Freeleech and Freeleech Only is ON, so we do not
-        # download.
-        pass
 
     return False
 
+def download_torrent(parser, torrent):
+    url = '{baseUrl}{link}'.format(baseUrl=parser.baseUrl, link=torrent.link )
+    r = requests.get(url, headers=parser.headers, stream=True)
+    return r
 
 def writeFile(data, filename, torrent_title):
     if not os.path.exists(output_folder):
@@ -68,12 +69,10 @@ def writeFile(data, filename, torrent_title):
     with open("./.already_downloaded", 'ab') as f:
         f.write(torrent_title + '\n')
 
-
 def readAlreadyDownloaded():
     import mmap
     with open('.already_downloaded', 'r') as f:
         return mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-
 
 def load_parsers():
     parsers = []
@@ -88,16 +87,26 @@ def load_parsers():
             
             parsers.append(mod.Parser(tracker_config, logger))
     return parsers
-           
+
+def par2(parser, torrent):
+    return check_download(parser, torrent)
+
+def par1(parser):
+        results = Parallel(n_jobs=NUM_JOBS, verbose=VERBOSITY_LEVEL, backend="threading")(delayed(par2)(parser, torrent)
+        for torrent in parser.parse())
+
+        return True if True in results else False
+            
+
 def start(parsers):
     to_download = False
     if cfg["freeleech_only"]:
-        logger.d("Freelech Only mode is: ON")
+        logger.d("Freeleech Only mode is: ON")
 
-    for parser in parsers:
-        for torrent in parser.parse():
-            if check_download(parser, torrent):
-                to_download = True
+    results = Parallel(n_jobs=NUM_JOBS, verbose=VERBOSITY_LEVEL, backend="threading")(delayed(par1)(parser)
+        for parser in parsers)
+
+    print results
 
     if not to_download:
         logger.i("Ningún torrent cumple el filtro")
