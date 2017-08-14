@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
+# coding=utf-8
 
 from base import BaseParser
 from libs.torrent import Torrent
-from lxml import html
+from lxml import html, etree
 from StringIO import StringIO
 
 import datetime
@@ -32,18 +32,23 @@ class Parser(BaseParser):
         if not r.status_code == 200:
             return []
 
-        tree = html.fromstring(r.content)
-        
-        for element in tree.xpath('//*[@class="b-content"]/table/tr'):
-            print html.tostring(element)
-
-        #print html.tostring(tree.xpath('.//*[@class="b-content"]/table')[0])
-
-        for index in enumerate([1]):
-            # Ignore first row (Headers)
-            if index == 0:
-                continue
-
+        tree = etree.parse(StringIO(r.content), etree.HTMLParser())       
 
         results = []
+        for index, row  in enumerate(tree.xpath('// form[@name="deltorrent"]/tr/td/table/tr')):
+            # Ignore first row (Headers) and last (Empty row)
+            if index == 0 or index == 36:
+                continue
+            title = row.xpath('./td[2]/a/text()')[0]
+            freeleech = True if row.xpath('./td[2]/img[@title="Gold 100% Free"]') else False
+            seeders = int(row.xpath('./td[6]/a/text()')[0])
+            leechers = int(row.xpath('./td[7]/a/text()')[0])
+            completed = int(row.xpath('./td[8]/a/text()')[0])
+            link = row.xpath('./td[3]/a/@href')[0]
+            uploadedAt = row.xpath('./td[5]/text()')
+            date = datetime.datetime.strptime(
+                uploadedAt[0].encode('utf-8'), '%d/%m/%Y')
+
+            results.append(Torrent(title=title, link=link, freeleech=freeleech, seeders=seeders, leechers=leechers, completed=completed, date=date))
+
         return results

@@ -42,18 +42,14 @@ class Parser(BaseParser):
             if index == 0:
                 continue
             titulos = row.xpath('./td[@class="titulo"]/a[last()]/text()')
-            seeders = row.xpath('./td[@class="usuarios seeds "]/a[last()]/text()')
-            leechers = row.xpath('./td[@class="usuarios leechers  "]/a[last()]/text()')
-            completados = row.xpath('./td[@class="usuarios completados"]/text()')
+            seeders = int(row.xpath('./td[@class="usuarios seeds "]/a[last()]/text()')[0])
+            leechers = int(row.xpath('./td[@class="usuarios leechers  "]/a[last()]/text()')[0])
+            completados = int(row.xpath('./td[@class="usuarios completados"]/text()')[0])
             uploadedAt = row.xpath('./td[@class="fecha"]/@title')
             download = row.xpath('./td[@class="descargar"]/a')
             link = download[0].xpath('./@href')[0]
             multiplicadores = download[0].xpath('./b/text()')
             freeleech = False
-            download = True
-            seeders = int(seeders[0])
-            completados = int(completados[0])
-            leechers = int(leechers[0])
 
             if "AudioEditado" in titulos[0] or "R" == titulos[0]:
                 titulos = row.xpath('./td[@class="titulo"]/a[last() - 1]/text()')
