@@ -39,11 +39,14 @@ class Parser(BaseParser):
             # Ignore first row (Headers) and last (Empty row)
             if index == 0 or index == 36:
                 continue
-            title = row.xpath('./td[2]/a/text()')[0]
+            title = row.xpath('./td[2]/a/text()')[0].lstrip()
             freeleech = True if row.xpath('./td[2]/img[@title="Gold 100% Free"]') else False
             seeders = int(row.xpath('./td[6]/a/text()')[0])
             leechers = int(row.xpath('./td[7]/a/text()')[0])
-            completed = int(row.xpath('./td[8]/a/text()')[0])
+            try:
+                completed = int(row.xpath('./td[8]/a/text()')[0])
+            except IndexError:
+                completed = 0
             link = row.xpath('./td[3]/a/@href')[0]
             uploadedAt = row.xpath('./td[5]/text()')
             date = datetime.datetime.strptime(
