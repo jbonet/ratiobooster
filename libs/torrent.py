@@ -3,7 +3,7 @@
 class Torrent:
 
     def __init__(self, title=None, link=None, freeleech=False, seeders=0, leechers=0, completed=0, date=None):
-        self.title = title
+        self.title = title.encode('utf-8')
         self.link = link
         self.freeleech = freeleech
         self.seeders = seeders

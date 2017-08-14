@@ -1,5 +1,6 @@
-# -*- coding: utf-8 -*-
+# coding=utf-8
 
+from base import BaseParser
 from libs.torrent import Torrent
 from lxml import etree
 from StringIO import StringIO
@@ -8,11 +9,11 @@ import datetime
 import locale
 import requests
 
-class Parser:
+class Parser(BaseParser):
     """Parser for HD-Spain torrent list"""
 
-    def __init__(self, config, logger):
-        locale.setlocale(locale.LC_ALL, 'es_ES.utf8')
+    def __init__(self, config=None, logger=None, name=""):
+        super(Parser, self).__init__(logger, name)
         self.config = config
         self.baseUrl = baseUrl = 'https://www.hd-spain.com/'
         self.headers = {
@@ -26,15 +27,12 @@ class Parser:
             }
         self.logger = logger
 
-    def download_torrent(self, torrent):
-        url = '{baseUrl}{link}'.format(baseUrl=self.baseUrl, link=torrent.link )
-        r = requests.get(url, headers=self.headers, stream=True)
-        return r
-
     def parse(self):
-        self.logger.d("Starting HD-Spain parsing...")
         url = '{baseUrl}index.php?sec=listado'.format(baseUrl=self.baseUrl)
         r = requests.get(url, headers=self.headers)
+        if not r.status_code == 200:
+            return []
+        
         tree = etree.parse(StringIO(r.content), etree.HTMLParser())
 
         results = []

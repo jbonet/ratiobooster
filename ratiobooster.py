@@ -1,5 +1,5 @@
 #!/bin/env python
-# -*- coding: utf-8 -*-
+# coding=utf-8
 
 from joblib import Parallel, delayed
 from libs import printer
@@ -26,7 +26,6 @@ output_folder = "./downloads"
 logger = None
 now = datetime.datetime.fromtimestamp(time.time())
 
-# El parser devolvera una lista [{"title": titulo, "link": link, "freelech": True}] por cada torrent parseado. El modulo original seguira siendo el que llame a la descarga.
 def check_download(parser, torrent):
     download = True
 
@@ -79,16 +78,22 @@ def readAlreadyDownloaded():
 
 def load_parsers():
     parsers = []
+    logger.d("Loading parsers...")
     for trackerDict in cfg["trackers"]:
         for tracker, tracker_config in trackerDict.iteritems():
-            logger.d(tracker)
+            logger.d("Loading parser for: %s" % tracker)
+            if not tracker_config["enabled"]:
+                logger.d("Parser for %s is disabled. Skipping..." % tracker)
+                continue
             mod = importlib.import_module('modules.%s' % (tracker))
 
+            tracker_config["name"] = tracker
             for param in ["minleechers", "maxseeds", "maxcompleted", "freeleech_only", "maxdays"]:
                 if param not in tracker_config:
                     tracker_config[param] = cfg[param]
-            
-            parsers.append(mod.Parser(tracker_config, logger))
+
+            logger.d("%s parser was loaded." % tracker)
+            parsers.append(mod.Parser(tracker_config, logger, tracker))
     return parsers
 
 def par2(parser, torrent):
