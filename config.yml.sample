@@ -1,11 +1,20 @@
-hdSpain:
-  cookie: "Your cookie"
-downloads_folder: "~/Downloads"
-# yes | no
+# Global config
+downloads_folder: "./downloads"
 freeleech_only: yes
+minleechers: 0
 
 # -1 is unlimited
 maxcompleted: 0
 maxseeds: 1
 maxdays: 1
-minleechers: 0
+
+trackers:
+  - tracker1:
+      enabled: yes
+      cookie: "sample Cookie"
+      # Per tracker customization
+      minleechers: 0
+  - tracker2:
+      enabled: no
+      cookie: "tracker2 sample cookie"
+
