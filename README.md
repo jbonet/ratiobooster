@@ -1,5 +1,6 @@
 # ratiobooster
 [![Build Status](https://travis-ci.org/jbonet/ratiobooster.svg?branch=master)](https://travis-ci.org/jbonet/ratiobooster)
+[![Requirements Status](https://requires.io/github/jbonet/ratiobooster/requirements.svg?branch=master)](https://requires.io/github/jbonet/ratiobooster/requirements/?branch=master)
 
 Boost your ratio in Private Trackers by being an early bird
 
