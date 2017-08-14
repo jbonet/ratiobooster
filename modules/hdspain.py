@@ -64,11 +64,4 @@ class Parser(BaseParser):
             results.append(Torrent(title=title, link=link, freeleech=freeleech, seeders=seeders, leechers=leechers, completed=completados, date=date))
 
         return results
-
-    def checkOrZero(self, item):
-        data = 0
-        try:
-            data = int(item[0])
-        except IndexError:
-            data = 0
-        return data
+    
