@@ -48,8 +48,13 @@ Consider this:
 - Cookie and enabled are the only required params for a tracker.
 - Every other param will override the global param for the tracker.
 
-Now we are in place to run the script.
+#### What is the cookie param?
 
+The cookie param contains the info needed to authenticate against the webserver and download your torrents. It can be found on:
+
+- Chrome: Developer Tools -> Network tab -> Key name of the page you just loaded -> Request Headers -> Cookie
+
+#### Running the script
 Just run:
 ```
 python ratiobooster.py
