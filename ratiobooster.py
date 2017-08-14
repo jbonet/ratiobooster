@@ -59,7 +59,7 @@ def download_torrent(parser, torrent):
 def writeFile(data, filename, torrent_title):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    print "Saving %s to %s" % (filename, output_folder)
+    logger.i("Saving %s to %s" % (filename, output_folder))
     with open("%s/%s" % (output_folder, filename), 'wb') as f:
         f.write(data)
     with open("./.already_downloaded", 'ab') as f:
