@@ -3,16 +3,13 @@
 
 from joblib import Parallel, delayed
 from libs import printer
-from lxml import etree
-from StringIO import StringIO
 
+import argparse
 import datetime
 import importlib
-import locale
 import os
 import re
 import requests
-import threading
 import time
 import yaml
 
@@ -22,7 +19,7 @@ VERBOSITY_LEVEL = 0
 cfg = None
 already_downloaded = None
 
-output_folder = "./downloads"
+output_folder = None
 logger = None
 now = datetime.datetime.fromtimestamp(time.time())
 
@@ -104,10 +101,9 @@ def par1(parser):
         for torrent in parser.parse())
 
         return True if True in results else False
-            
+
 
 def start(parsers):
-    to_download = False
     if cfg["freeleech_only"]:
         logger.d("Freeleech Only mode is: ON")
 
@@ -118,10 +114,22 @@ def start(parsers):
         logger.i("Ningún torrent cumple el filtro")
 
 if __name__ == '__main__':
-    with open('config.yml', 'r') as ymlfile:
-        cfg = yaml.load(ymlfile)
-        output_folder = cfg["downloads_folder"]
 
-    logger = printer.Printer(True)
-    already_downloaded = readAlreadyDownloaded()
-    start(load_parsers())
+    argparser = argparse.ArgumentParser()
+
+    argparser.add_argument('-c', '--config', metavar="custom_config.yml", help="Loads the specified config file",
+                        default="config.yml")
+    argparser.add_argument('-d', '--debug', action='store_true',
+                        help='Enables Debug mode (Verbose)', default=False)
+
+    args = argparser.parse_args()
+    logger = printer.Printer(args.debug)
+
+    if os.path.exists(args.config):
+        with open(args.config, 'r') as ymlfile:
+            cfg = yaml.load(ymlfile)
+            output_folder = cfg["downloads_folder"]
+        already_downloaded = readAlreadyDownloaded()
+        start(load_parsers())
+    else:
+        logger.e('The specified config file (%s) does not exist!' % (args.config))

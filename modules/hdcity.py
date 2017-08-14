@@ -2,7 +2,7 @@
 
 from base import BaseParser
 from libs.torrent import Torrent
-from lxml import html, etree
+from lxml import etree
 from StringIO import StringIO
 
 import datetime
@@ -27,6 +27,7 @@ class Parser(BaseParser):
         self.logger = logger
 
     def parse(self):
+        self.logger.i("Checking HDCity torrents")
         url = '{baseUrl}index.php?page=torrents'.format(baseUrl=self.baseUrl)
         r = requests.get(url, headers=self.headers)
         if not r.status_code == 200:

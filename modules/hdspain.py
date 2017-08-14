@@ -6,7 +6,6 @@ from lxml import etree
 from StringIO import StringIO
 
 import datetime
-import locale
 import requests
 
 class Parser(BaseParser):
@@ -15,7 +14,7 @@ class Parser(BaseParser):
     def __init__(self, config=None, logger=None, name=""):
         super(Parser, self).__init__(logger, name)
         self.config = config
-        self.baseUrl = baseUrl = 'https://www.hd-spain.com/'
+        self.baseUrl = 'https://www.hd-spain.com/'
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml',
@@ -28,6 +27,7 @@ class Parser(BaseParser):
         self.logger = logger
 
     def parse(self):
+        self.logger.i("Checking HDSpain torrents")
         url = '{baseUrl}index.php?sec=listado'.format(baseUrl=self.baseUrl)
         r = requests.get(url, headers=self.headers)
         if not r.status_code == 200:
