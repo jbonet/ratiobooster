@@ -33,8 +33,7 @@ class Parser(BaseParser):
         if not r.status_code == 200:
             return []
 
-        tree = etree.parse(StringIO(r.content), etree.HTMLParser())       
-
+        tree = etree.parse(StringIO(r.content), etree.HTMLParser())
         results = []
         for index, row  in enumerate(tree.xpath('// form[@name="deltorrent"]/tr/td/table/tr')):
             # Ignore first row (Headers) and last (Empty row)

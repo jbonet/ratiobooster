@@ -32,7 +32,7 @@ class Parser(BaseParser):
         r = requests.get(url, headers=self.headers)
         if not r.status_code == 200:
             return []
-        
+
         tree = etree.parse(StringIO(r.content), etree.HTMLParser())
 
         results = []
@@ -42,9 +42,9 @@ class Parser(BaseParser):
             if index == 0:
                 continue
             titulos = row.xpath('./td[@class="titulo"]/a[last()]/text()')
-            seeders = int(row.xpath('./td[@class="usuarios seeds "]/a[last()]/text()')[0])
-            leechers = int(row.xpath('./td[@class="usuarios leechers  "]/a[last()]/text()')[0])
-            completados = int(row.xpath('./td[@class="usuarios completados"]/text()')[0])
+            seeders = self.checkOrZero(row.xpath('./td[@class="usuarios seeds "]/a[last()]/text()'))
+            leechers = self.checkOrZero(row.xpath('./td[@class="usuarios leechers  "]/a[last()]/text()'))
+            completados = self.checkOrZero(row.xpath('./td[@class="usuarios completados"]/text()'))
             uploadedAt = row.xpath('./td[@class="fecha"]/@title')
             download = row.xpath('./td[@class="descargar"]/a')
             link = download[0].xpath('./@href')[0]
@@ -63,4 +63,12 @@ class Parser(BaseParser):
 
             results.append(Torrent(title=title, link=link, freeleech=freeleech, seeders=seeders, leechers=leechers, completed=completados, date=date))
 
-        return results 
+        return results
+
+    def checkOrZero(self, item):
+        data = 0
+        try:
+            data = int(item[0])
+        except IndexError:
+            data = 0
+        return data
