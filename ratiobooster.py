@@ -10,6 +10,7 @@ import importlib
 import os
 import re
 import requests
+import sys
 import time
 import yaml
 
@@ -121,9 +122,15 @@ if __name__ == '__main__':
                         default="config.yml")
     argparser.add_argument('-d', '--debug', action='store_true',
                         help='Enables Debug mode (Verbose)', default=False)
+    argparser.add_argument('-t', '--test', action='store_true',
+                        help='Starts in Test Mode', default=False)
 
     args = argparser.parse_args()
     logger = printer.Printer(args.debug)
+
+    if args.test:
+        logger.i("Test Mode")
+        sys.exit(0)
 
     if os.path.exists(args.config):
         with open(args.config, 'r') as ymlfile:
