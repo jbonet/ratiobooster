@@ -44,7 +44,7 @@ class Parser(BaseParser):
             freeleech = True if row.xpath('./td[2]/img[@title="Gold 100% Free"]') else False
             seeders = self.checkOrZero(row.xpath('./td[6]/a/text()'))
             leechers = self.checkOrZero(row.xpath('./td[7]/a/text()'))
-            completed = self.checkOrZero(row.xpath('./td[8]/a/text()'))          
+            completed = self.checkOrZero(row.xpath('./td[8]/a/text()'))      
             link = row.xpath('./td[3]/a/@href')[0]
             uploadedAt = row.xpath('./td[5]/text()')
             date = datetime.datetime.strptime(
