@@ -2,6 +2,7 @@
 
 from base import BaseParser
 from libs.torrent import Torrent
+from defusedxml import lxml
 from lxml import etree
 from StringIO import StringIO
 
@@ -33,7 +34,7 @@ class Parser(BaseParser):
         if not r.status_code == 200:
             return []
 
-        tree = etree.parse(StringIO(r.content), etree.HTMLParser())
+        tree = lxml.parse(StringIO(r.content), parser=etree.HTMLParser())
         results = []
         for index, row  in enumerate(tree.xpath('// form[@name="deltorrent"]/tr/td/table/tr')):
             # Ignore first row (Headers) and last (Empty row)
@@ -43,7 +44,7 @@ class Parser(BaseParser):
             freeleech = True if row.xpath('./td[2]/img[@title="Gold 100% Free"]') else False
             seeders = self.checkOrZero(row.xpath('./td[6]/a/text()'))
             leechers = self.checkOrZero(row.xpath('./td[7]/a/text()'))
-            completed = self.checkOrZero(row.xpath('./td[8]/a/text()'))            
+            completed = self.checkOrZero(row.xpath('./td[8]/a/text()'))          
             link = row.xpath('./td[3]/a/@href')[0]
             uploadedAt = row.xpath('./td[5]/text()')
             date = datetime.datetime.strptime(

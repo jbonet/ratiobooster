@@ -134,7 +134,7 @@ if __name__ == '__main__':
 
     if os.path.exists(args.config):
         with open(args.config, 'r') as ymlfile:
-            cfg = yaml.load(ymlfile)
+            cfg = yaml.safe_load(ymlfile)
             output_folder = cfg["downloads_folder"]
         already_downloaded = readAlreadyDownloaded()
         start(load_parsers())
