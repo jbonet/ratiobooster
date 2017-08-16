@@ -3,7 +3,7 @@
 from base import BaseParser
 from libs.torrent import Torrent
 from defusedxml import lxml
-from lxml import etree
+from lxml import html
 from StringIO import StringIO
 
 import datetime
@@ -34,7 +34,7 @@ class Parser(BaseParser):
         if not r.status_code == 200:
             return []
 
-        tree = lxml.parse(StringIO(r.content), parser=etree.HTMLParser())
+        tree = lxml.parse(StringIO(r.content), parser=html.HTMLParser())
 
         results = []
 
